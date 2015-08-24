@@ -58,6 +58,19 @@ func TestRouterConcurrent(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if !routed1 || !routed2 {
-		t.Fatal("routing failed1")
+		t.Fatal("routing failed")
 	}
+}
+
+func TestLookup(t *testing.T) {
+	found, params := lookup("/users/:id/addresses", "/users/1/addresses")
+	if !found || params["id"] != "1" {
+		t.Fatal("lookup failed")
+	}
+
+	found, params = lookup("/users/:user_id/addresses/:address_id", "/users/14/addresses/2")
+	if !found || params["user_id"] != "14" || params["address_id"] != "2" {
+		t.Fatal("lookup failed")
+	}
+
 }

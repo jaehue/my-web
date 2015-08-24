@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -41,4 +42,30 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	http.Error(w, fmt.Sprintf("'%s' is invalid path.", path), http.StatusNotFound)
+}
+
+func lookup(pattern, path string) (found bool, params map[string]string) {
+	patterns := strings.Split(pattern, "/")
+	paths := strings.Split(path, "/")
+
+	if len(patterns) != len(paths) {
+		return
+	}
+
+	params = make(map[string]string)
+
+	for i := 0; i < len(patterns); i++ {
+		if patterns[i] == paths[i] {
+			found = true
+			continue
+		}
+		if patterns[i][0] == ':' {
+			params[patterns[i][1:]] = paths[i]
+			found = true
+			continue
+		}
+		found = false
+		break
+	}
+	return
 }
