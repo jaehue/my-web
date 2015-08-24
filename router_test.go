@@ -16,7 +16,7 @@ func TestRouter(t *testing.T) {
 	r, _ := NewRouter()
 
 	routed := false
-	r.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 		routed = true
 	})
 
@@ -38,13 +38,13 @@ func TestRouterConcurrent(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		r.HandleFunc("/user1", func(w http.ResponseWriter, r *http.Request) {
+		r.HandleFunc("/user1", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 			routed1 = true
 		})
 		done <- struct{}{}
 	}()
 
-	r.HandleFunc("/user2", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/user2", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 		routed2 = true
 	})
 	<-done
@@ -73,4 +73,24 @@ func TestLookup(t *testing.T) {
 		t.Fatal("lookup failed")
 	}
 
+}
+
+func TestRouterLookup(t *testing.T) {
+	r, _ := NewRouter()
+
+	routed := false
+	var params map[string]string
+	r.HandleFunc("/users/:user_id/addresses/:address_id", func(w http.ResponseWriter, r *http.Request, p map[string]string) {
+		routed = true
+		params = p
+	})
+
+	w := new(mockResponseWriter)
+
+	req, _ := http.NewRequest("GET", "/users/14/addresses/2", nil)
+	r.ServeHTTP(w, req)
+
+	if !routed || params["user_id"] != "14" || params["address_id"] != "2" {
+		t.Fatal("routing failed")
+	}
 }

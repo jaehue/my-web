@@ -8,19 +8,21 @@ import (
 	"sync"
 )
 
+type HandlerFunc func(http.ResponseWriter, *http.Request, map[string]string)
+
 type router struct {
 	mu       sync.RWMutex
-	handlers map[string]http.HandlerFunc
+	handlers map[string]HandlerFunc
 }
 
 func NewRouter() (*router, error) {
 	r := &router{
-		handlers: make(map[string]http.HandlerFunc),
+		handlers: make(map[string]HandlerFunc),
 	}
 	return r, nil
 }
 
-func (r *router) HandleFunc(path string, handler http.HandlerFunc) {
+func (r *router) HandleFunc(path string, handler HandlerFunc) {
 	if len(path) == 0 {
 		panic("path must not be nil")
 	}
@@ -37,7 +39,11 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	for pattern, handler := range r.handlers {
 		if m, _ := regexp.MatchString(pattern, path); m {
-			handler(w, req)
+			handler(w, req, nil)
+			return
+		}
+		if found, params := lookup(pattern, path); found {
+			handler(w, req, params)
 			return
 		}
 	}
