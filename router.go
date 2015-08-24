@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sync"
 )
 
 type router struct {
+	mu       sync.RWMutex
 	handlers map[string]http.HandlerFunc
 }
 
@@ -24,7 +26,9 @@ func (r *router) HandleFunc(path string, handler http.HandlerFunc) {
 	if path[0] != '/' {
 		panic(fmt.Sprintf("path must begin with '/' in path '%s'", path))
 	}
+	r.mu.Lock()
 	r.handlers[path] = handler
+	r.mu.Unlock()
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
