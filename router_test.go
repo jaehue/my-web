@@ -29,3 +29,35 @@ func TestRouter(t *testing.T) {
 		t.Fatal("routing failed")
 	}
 }
+
+func TestRouterConcurrent(t *testing.T) {
+	r, _ := NewRouter()
+
+	routed1 := false
+	routed2 := false
+
+	done := make(chan struct{})
+	go func() {
+		r.HandleFunc("/user1", func(w http.ResponseWriter, r *http.Request) {
+			routed1 = true
+		})
+		done <- struct{}{}
+	}()
+
+	r.HandleFunc("/user2", func(w http.ResponseWriter, r *http.Request) {
+		routed2 = true
+	})
+	<-done
+
+	w := new(mockResponseWriter)
+
+	req, _ := http.NewRequest("GET", "/user1", nil)
+	r.ServeHTTP(w, req)
+
+	req, _ = http.NewRequest("GET", "/user2", nil)
+	r.ServeHTTP(w, req)
+
+	if !routed1 || !routed2 {
+		t.Fatal("routing failed1")
+	}
+}
